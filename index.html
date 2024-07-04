@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>COLOMBIACHECK</title>
+    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+    <script type="module" src="js/world-tracking.js"></script>
+    <script src="js/aframe-chromakey-material.min.js"></script>
+    <script>
+      AFRAME.registerComponent("start-button", {
+        init: function () {
+          const sceneEl = document.querySelector("a-scene");
+
+          // Añadir cursor a la escena
+          const cursor = document.createElement("a-entity");
+          cursor.setAttribute("cursor", { rayOrigin: "mouse" });
+          sceneEl.appendChild(cursor);
+
+          // Obtener el botón de video y agregar el evento de clic
+          const videoButton = document.getElementById("videobutton");
+          const whatsappButton = document.getElementById("whatsappbutton");
+          whatsappButton.style.display = "none"; // Ocultar botón de WhatsApp inicialmente
+
+          // Verificar si se ha concedido permiso para la cámara y está activa
+          navigator.mediaDevices
+            .getUserMedia({ video: true })
+            .then(function (stream) {
+              // Cámara activa, mostrar el botón después de 1 segundo
+              setTimeout(function () {
+                videoButton.style.display = "block";
+              }, 1000);
+            })
+            .catch(function (err) {
+              // Manejar el error de permisos
+              console.error("Error al acceder a la cámara:", err);
+            });
+
+          videoButton.addEventListener("click", function () {
+            const videoEls = document.querySelectorAll("video");
+            let videosRemaining = videoEls.length;
+
+            videoEls.forEach((videoEl) => {
+              videoEl.play();
+              videoEl.addEventListener("ended", function () {
+                videosRemaining--;
+                if (videosRemaining === 0) {
+                  whatsappButton.style.display = "block"; // Mostrar botón de WhatsApp cuando todos los videos terminen
+                }
+              });
+
+              // Mantener la posición fija del vídeo
+              const entityEl = document.querySelector(
+                `[material*="${videoEl.id}"]`
+              );
+              if (entityEl) {
+                entityEl.setAttribute("visible", "true");
+                entityEl.removeAttribute("animation"); // Eliminar cualquier animación activa
+                entityEl.setAttribute(
+                  "position",
+                  entityEl.getAttribute("position")
+                ); // Mantener la posición fija
+              }
+            });
+
+            // Obtener la posición y rotación de la cámara
+            const cameraEl = document.querySelector("[camera]");
+            const cameraPosition = cameraEl.object3D.position;
+            const cameraRotation = cameraEl.object3D.rotation;
+
+            // Función para calcular la nueva posición del pivote en función de la rotación de la cámara
+            function calculateNewPosition(originalPosition) {
+              const vector = new THREE.Vector3(
+                originalPosition.x,
+                originalPosition.y,
+                originalPosition.z
+              );
+              vector.applyAxisAngle(
+                new THREE.Vector3(0, 1, 0),
+                cameraRotation.y
+              ); // Rotar el vector alrededor del eje Y
+              return {
+                x: cameraPosition.x + vector.x,
+                y: cameraPosition.y + vector.y,
+                z: cameraPosition.z + vector.z,
+              };
+            }
+
+            // Actualizar las posiciones y rotaciones de los pivotes
+            function updatePivot(pivotId, originalPosition) {
+              const pivotEl = document.getElementById(pivotId);
+              const newPosition = calculateNewPosition(originalPosition);
+              pivotEl.setAttribute("position", newPosition);
+              pivotEl.setAttribute("rotation", {
+                x: 0,
+                y: THREE.Math.radToDeg(cameraRotation.y),
+                z: 0,
+              });
+            }
+
+            updatePivot("pivot1", { x: 0, y: 1, z: -30 });
+            updatePivot("pivot2", { x: 0, y: 1, z: -20 });
+            updatePivot("pivot3", { x: 0, y: 1, z: -15 });
+
+            const clickSound = document.getElementById("clickSound");
+            clickSound.play();
+
+            videoButton.style.display = "none";
+
+            const initialImage = document.getElementById("initialImage");
+            if (initialImage) {
+              initialImage.style.display = "none"; // Ocultar la imagen inicial al hacer clic en el botón de video
+            }
+          });
+
+          // Obtener el botón de WhatsApp y agregar el evento de clic
+          whatsappButton.addEventListener("click", function () {
+            window.location.href = "https://bit.ly/Gatochequeabot"; // Reemplaza con el número de WhatsApp deseado
+            const clickSound = document.getElementById("clickSound");
+            clickSound.play();
+          });
+        },
+      });
+
+      function scaleBack(element) {
+        element.style.transform = "scale(1.1)";
+        setTimeout(function () {
+          element.style.transform = "scale(1)";
+        }, 200); // 200ms, igual que la duración de la transición
+      }
+    </script>
+  </head>
+  <body>
+    <div id="container"></div>
+
+    <a-scene
+      start-button
+      environment="preset: forest; seed: 1"
+      renderer="antialias: true; colorManagement: true; shadowMap: true"
+      vr-mode-ui="enabled: false"
+    >
+      <a-assets>
+        <video
+          id="greenscreenvideo1"
+          src="https://cdn.glitch.global/d344ab54-5f6e-472a-800b-6ccc5e9145de/Gatofondov8-MAIN.mp4?v=1720046667642"
+          crossorigin="anonymous"
+          playsinline
+        ></video>
+        <video
+          id="greenscreenvideo2"
+          src="https://cdn.glitch.global/d344ab54-5f6e-472a-800b-6ccc5e9145de/Gatomediov8-MAIN.mp4?v=1720046668364"
+          crossorigin="anonymous"
+          playsinline
+        ></video>
+        <video
+          id="greenscreenvideo3"
+          src="https://cdn.glitch.global/d344ab54-5f6e-472a-800b-6ccc5e9145de/Gatolupav8-MAIN.mp4?v=1720046667168"
+          crossorigin="anonymous"
+          playsinline
+        ></video>
+      </a-assets>
+      <a-entity id="pivot1" position="0 1 -30">
+        <a-entity
+          id="arVideo1"
+          position="0 0 0"
+          scale="32.76 22.0 32.76"
+          material="shader: chromakey; src: #greenscreenvideo1; color: 0.72 0.72 0.72; threshold: 0.1; choker: 0.001"
+          geometry="primitive: plane"
+          visible="false"
+        ></a-entity>
+      </a-entity>
+
+      <a-entity id="pivot2" position="0 1 -20">
+        <a-entity
+          id="arVideo2"
+          position="0 0 0"
+          scale="44.8 28 5.6"
+          material="shader: chromakey; src: #greenscreenvideo2; color: 0.72 0.72 0.72; threshold: 0.1; choker: 0.001"
+          geometry="primitive: plane"
+          visible="false"
+        ></a-entity>
+      </a-entity>
+
+      <a-entity id="pivot3" position="0 1 -15">
+        <a-entity
+          id="arVideo3"
+          position="0 0 0"
+          scale="22.4 14 22.4"
+          material="shader: chromakey; src: #greenscreenvideo3; color: 0.72 0.72 0.72; threshold: 0.1; choker: 0.001"
+          geometry="primitive: plane"
+          visible="false"
+        ></a-entity>
+      </a-entity>
+      <audio
+        id="clickSound"
+        src="https://cdn.glitch.global/bd267145-8718-4d29-bd61-0a1ce8b51bbb/click.mp3?v=1718739229743"
+      ></audio>
+
+      <!-- BOTON SALVAVIDAS NO BORRAR PORFAVORSITO SINO SE DAÑA TODO Y SOLO NOS QUEDA LLORAR -->
+      <a-plane
+        id="startButton"
+        position="0 2 5"
+        scale="0.01 0.01 0.01"
+        color="blue"
+      >
+        <a-entity cursor-listener></a-entity>
+      </a-plane>
+      <a-plane
+        id="tracked"
+        position="0 0 0"
+        scale="0 0 0"
+        opacity="0"
+      ></a-plane>
+    </a-scene>
+    <img
+      id="videobutton"
+      class="button"
+      src="https://cdn.glitch.global/d344ab54-5f6e-472a-800b-6ccc5e9145de/BOTON-COMENZAR-aj.png?v=1720046917775"
+      style="
+        position: absolute;
+        top: 75%;
+        left: 10%;
+        width: 80%;
+        height: auto;
+        cursor: pointer;
+        z-index: 2;
+        transition: transform 0.2s ease-in-out;
+        display: none; /* Ocultar inicialmente */
+      "
+      onmouseover="this.style.transform='scale(1.1)'"
+      onmouseout="this.style.transform='scale(1)'"
+      onclick="scaleBack(this)"
+    />
+
+    <img
+      id="whatsappbutton"
+      class="button"
+      src="https://cdn.glitch.global/bd267145-8718-4d29-bd61-0a1ce8b51bbb/BOTON.png?v=1719363790295"
+      style="
+        position: absolute;
+        top: 60%;
+        left: 5%;
+        width: 90%;
+        height: auto;
+        cursor: pointer;
+        transition: transform 0.2s ease-in-out; /* Transición suave para el efecto */
+      "
+      onmouseover="this.style.transform='scale(1.1)'"
+      onmouseout="this.style.transform='scale(1)'"
+      onclick="scaleBack(this)"
+    />
+    <img
+      id="initialImage"
+      src="https://cdn.glitch.global/d344ab54-5f6e-472a-800b-6ccc5e9145de/instrucciones.png?v=1719940676074"
+      style="
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        max-width: 100%;
+        max-height: 100%;
+        z-index: 1;
+        display: block;
+      "
+    />
+  </body>
+</html>
